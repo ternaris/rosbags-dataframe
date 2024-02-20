@@ -8,7 +8,7 @@ To more efficiently resolve this issue, we'd like to know some basic information
 
 2) Version of python you are running (`python --version`):
 
-3) How did you install rosbags-dataframe Did you use pip to install from PyPI or a repository checkout or something else?
+3) How did you install rosbags-dataframe? Did you use pip to install from PyPI or a repository checkout or something else?
 
 4) Version of rosbags-dataframe you have installed (`pip show rosbags-dataframe | grep Version`):
 
