@@ -1,4 +1,4 @@
-# Copyright 2019-2022  Ternaris.
+# Copyright 2020 - 2024 Ternaris
 # SPDX-License-Identifier: Apache-2.0
 """Conversion of rosbag topics to dataframes."""
 
@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pandas  # type: ignore
-from rosbags.serde.messages import get_msgdef
-from rosbags.serde.utils import Valtype
+import pandas as pd  # type: ignore[import-untyped]
+
+from rosbags.interfaces import Nodetype
 
 if TYPE_CHECKING:
     from typing import Callable, Sequence, Union
@@ -22,7 +22,7 @@ class DataframeError(Exception):
     """Dataframe conversion error."""
 
 
-def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pandas.DataFrame:
+def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pd.DataFrame:
     """Convert messages from a topic into a pandas dataframe.
 
     Read all messages from a topic and extract referenced keys into
@@ -45,21 +45,23 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pan
     """
     # pylint: disable=too-many-locals
     if not reader.isopen:
-        raise DataframeError('RosbagReader needs to be opened before accessing messages.')
+        msg = 'RosbagReader needs to be opened before accessing messages.'
+        raise DataframeError(msg)
 
     if topicname not in reader.topics:
-        raise DataframeError(f'Requested unknown topic {topicname!r}.')
+        msg = f'Requested unknown topic {topicname!r}.'
+        raise DataframeError(msg)
 
     topic = reader.topics[topicname]
     assert topic.msgtype
 
-    msgdef = get_msgdef(topic.msgtype, reader.typestore)
+    msgdef = reader.typestore.get_msgdef(topic.msgtype)
 
     def create_plain_getter(key: str) -> Callable[[object], AttrValue]:
         """Create getter for plain attribute lookups."""
 
         def getter(msg: object) -> AttrValue:
-            return getattr(msg, key)  # type: ignore
+            return getattr(msg, key)  # type: ignore[no-any-return]
 
         return getter
 
@@ -79,17 +81,20 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pan
         subkeys = key.split('.')
         subdef = msgdef
         for subkey in subkeys[:-1]:
-            subfield = next((x for x in subdef.fields if x.name == subkey), None)
+            subfield = next((x for x in subdef.fields if x[0] == subkey), None)
             if not subfield:
-                raise DataframeError(f'Field {subkey!r} does not exist on {subdef.name!r}.')
+                msg = f'Field {subkey!r} does not exist on {subdef.name!r}.'
+                raise DataframeError(msg)
 
-            if subfield.descriptor.valtype != Valtype.MESSAGE:
-                raise DataframeError(f'Field {subkey!r} of {subdef.name!r} is not a message.')
+            if subfield[1][0] != Nodetype.NAME:
+                msg = f'Field {subkey!r} of {subdef.name!r} is not a message.'
+                raise DataframeError(msg)
 
-            subdef = subfield.descriptor.args
+            subdef = reader.typestore.get_msgdef(subfield[1][1])
 
-        if subkeys[-1] not in {x.name for x in subdef.fields}:
-            raise DataframeError(f'Field {subkeys[-1]!r} does not exist on {subdef.name!r}.')
+        if subkeys[-1] not in {x[0] for x in subdef.fields}:
+            msg = f'Field {subkeys[-1]!r} does not exist on {subdef.name!r}.'
+            raise DataframeError(msg)
 
         if len(subkeys) == 1:
             getters.append(create_plain_getter(subkeys[0]))
@@ -99,8 +104,8 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pan
     timestamps = []
     data = []
     for _, timestamp, rawdata in reader.messages(connections=topic.connections):
-        msg = reader.deserialize(rawdata, topic.msgtype)
+        dmsg = reader.deserialize(rawdata, topic.msgtype)
         timestamps.append(timestamp)
-        data.append([x(msg) for x in getters])
+        data.append([x(dmsg) for x in getters])
 
-    return pandas.DataFrame(data, columns=keys, index=pandas.to_datetime(timestamps))
+    return pd.DataFrame(data, columns=tuple(keys), index=pd.to_datetime(timestamps))
