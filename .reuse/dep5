@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: rosbags-image
+Upstream-Name: rosbags-dataframe
 Upstream-Contact: Ternaris <team@ternaris.com>
-Source: https://gitlab.com/ternaris/rosbags-image
+Source: https://gitlab.com/ternaris/rosbags-dataframe
 
 Files: .gitignore .github/* .gitlab/* requirements*.txt *.toml *.yml
 Copyright: 2016 - 2024 Ternaris <team@ternaris.com>
