@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 import pytest
 
 from rosbags.dataframe import DataframeError, get_dataframe
@@ -51,19 +51,19 @@ def test_get_dataframe(tmp_path: Path) -> None:
         writer.write(gps, 666, store.serialize_ros1(msg, NavSatFix.__msgtype__))
 
     with pytest.raises(DataframeError, match='opened before'):
-        get_dataframe(AnyReader([path]), '/gps', ['status.status', 'latitude', 'longitude'])
+        _ = get_dataframe(AnyReader([path]), '/gps', ['status.status', 'latitude', 'longitude'])
 
     with AnyReader([path]) as reader, pytest.raises(DataframeError, match='unknown topic'):
-        get_dataframe(reader, '/badtopic', ['status.status', 'latitude', 'longitude'])
+        _ = get_dataframe(reader, '/badtopic', ['status.status', 'latitude', 'longitude'])
 
     with AnyReader([path]) as reader, pytest.raises(DataframeError, match='not exist'):
-        get_dataframe(reader, '/gps', ['badfield'])
+        _ = get_dataframe(reader, '/gps', ['badfield'])
 
     with AnyReader([path]) as reader, pytest.raises(DataframeError, match='does not exist on'):
-        get_dataframe(reader, '/gps', ['badfield.stamp'])
+        _ = get_dataframe(reader, '/gps', ['badfield.stamp'])
 
     with AnyReader([path]) as reader, pytest.raises(DataframeError, match='is not a message'):
-        get_dataframe(reader, '/gps', ['latitude.badfield'])
+        _ = get_dataframe(reader, '/gps', ['latitude.badfield'])
 
     reference = pd.DataFrame(
         {
@@ -77,8 +77,8 @@ def test_get_dataframe(tmp_path: Path) -> None:
                 11.5428,
             ],
         },
-        index=pd.to_datetime([42, 666]),
+        index=pd.to_datetime([42, 666]),  # pyright: ignore[reportUnknownMemberType]
     )
     with AnyReader([path]) as reader:
         dataframe = get_dataframe(reader, '/gps', ['status.status', 'latitude', 'longitude'])
-        assert dataframe.equals(reference)
+        assert dataframe.equals(reference)  # pyright: ignore[reportUnknownMemberType]

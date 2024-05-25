@@ -4,18 +4,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 from rosbags.interfaces import Nodetype
 
 if TYPE_CHECKING:
-    from typing import Callable, Sequence, Union
+    from collections.abc import Callable, Sequence
+    from typing import TypeAlias
 
     from rosbags.highlevel import AnyReader
 
-    AttrValue = Union[str, bool, int, float, object]
+    AttrValue: TypeAlias = str | bool | int | float | object
 
 
 class DataframeError(Exception):
@@ -57,26 +58,26 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pd.
 
     msgdef = reader.typestore.get_msgdef(topic.msgtype)
 
-    def create_plain_getter(key: str) -> Callable[[object], AttrValue]:
+    def create_plain_getter(key: str) -> Callable[[AttrValue], AttrValue]:
         """Create getter for plain attribute lookups."""
 
-        def getter(msg: object) -> AttrValue:
-            return getattr(msg, key)  # type: ignore[no-any-return]
+        def getter(msg: AttrValue) -> AttrValue:
+            return cast('AttrValue', getattr(msg, key))
 
         return getter
 
-    def create_nested_getter(keys: list[str]) -> Callable[[object], AttrValue]:
+    def create_nested_getter(keys: list[str]) -> Callable[[AttrValue], AttrValue]:
         """Create getter for nested lookups."""
 
-        def getter(msg: object) -> AttrValue:
+        def getter(msg: AttrValue) -> AttrValue:
             value = msg
             for key in keys:
-                value = getattr(value, key)
+                value = cast('AttrValue', getattr(value, key))
             return value
 
         return getter
 
-    getters = []
+    getters: list[Callable[[AttrValue], AttrValue]] = []
     for key in keys:
         subkeys = key.split('.')
         subdef = msgdef
@@ -101,11 +102,12 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pd.
         else:
             getters.append(create_nested_getter(subkeys))
 
-    timestamps = []
-    data = []
+    timestamps: list[int] = []
+    data: list[list[AttrValue]] = []
     for _, timestamp, rawdata in reader.messages(connections=topic.connections):
         dmsg = reader.deserialize(rawdata, topic.msgtype)
         timestamps.append(timestamp)
         data.append([x(dmsg) for x in getters])
 
-    return pd.DataFrame(data, columns=tuple(keys), index=pd.to_datetime(timestamps))
+    index = pd.to_datetime(timestamps)  # pyright: ignore[reportUnknownMemberType]
+    return pd.DataFrame(data, columns=tuple(keys), index=index)
