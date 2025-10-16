@@ -9,17 +9,17 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pytest
-
-from rosbags.dataframe import DataframeError, get_dataframe
 from rosbags.highlevel import AnyReader
 from rosbags.rosbag1 import Writer
 from rosbags.typesys import Stores, get_typestore
-from rosbags.typesys.stores.latest import (
+from rosbags.typesys.stores.ros1_noetic import (
     builtin_interfaces__msg__Time as Time,
     sensor_msgs__msg__NavSatFix as NavSatFix,
     sensor_msgs__msg__NavSatStatus as NavSatStatus,
     std_msgs__msg__Header as Header,
 )
+
+from rosbags.dataframe import DataframeError, get_dataframe
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,7 +34,7 @@ def test_get_dataframe(tmp_path: Path) -> None:
         gps = writer.add_connection('/gps', NavSatFix.__msgtype__, typestore=store)
 
         msg = NavSatFix(
-            header=Header(stamp=Time(sec=0, nanosec=0), frame_id='/base'),
+            header=Header(0, stamp=Time(sec=0, nanosec=0), frame_id='/base'),
             status=NavSatStatus(status=0, service=1),
             latitude=43.8476,
             longitude=18.3564,
