@@ -65,6 +65,7 @@ dev = [
   "sphinx",
   "sphinx-autodoc-typehints",
   "sphinx-rtd-theme",
+  "ty",
   # project specific
   "pandas-stubs",
 ]
@@ -141,3 +142,9 @@ convention = "google"
 [tool.setuptools_scm]
 version_scheme = "only-version"
 local_scheme = "no-local-version"
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.rules]
+all = "error"
