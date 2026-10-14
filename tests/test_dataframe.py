@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pytest
-from rosbags.highlevel import AnyReader
+from rosbags.highlevel import AnyReader, AnyReaderError
 from rosbags.rosbag1 import Writer
 from rosbags.typesys import Stores, get_typestore
 from rosbags.typesys.stores.ros1_noetic import (
@@ -50,7 +50,7 @@ def test_get_dataframe(tmp_path: Path) -> None:
 
         writer.write(gps, 666, store.serialize_ros1(msg, NavSatFix.__msgtype__))
 
-    with pytest.raises(DataframeError, match='opened before'):
+    with pytest.raises(AnyReaderError, match='not open'):
         _ = get_dataframe(AnyReader([path]), '/gps', ['status.status', 'latitude', 'longitude'])
 
     with AnyReader([path]) as reader, pytest.raises(DataframeError, match='unknown topic'):

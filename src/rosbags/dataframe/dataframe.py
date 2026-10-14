@@ -44,10 +44,6 @@ def get_dataframe(reader: AnyReader, topicname: str, keys: Sequence[str]) -> pd.
 
     """
     # pylint: disable=too-many-locals
-    if not reader.isopen:
-        msg = 'RosbagReader needs to be opened before accessing messages.'
-        raise DataframeError(msg)
-
     if topicname not in reader.topics:
         msg = f'Requested unknown topic {topicname!r}.'
         raise DataframeError(msg)
