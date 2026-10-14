@@ -1,4 +1,4 @@
-# Copyright 2020 - 2024 Ternaris
+# Copyright 2020-2026 Ternaris
 # SPDX-License-Identifier: Apache-2.0
 """Conversion of rosbag topics to dataframes."""
 
